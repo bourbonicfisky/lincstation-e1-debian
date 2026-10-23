@@ -282,6 +282,9 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&vcc_wl_en>;
 		regulator-name = "vcc_wl";
+		/* Always on, as in the stock firmware; the SDIO card fails to initialise when sdmmc1 switches these. */
+		regulator-always-on;
+		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&vcc5v0_sys>;
@@ -294,6 +297,8 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&vccio_wl_en>;
 		regulator-name = "vccio_wl";
+		regulator-always-on;
+		regulator-boot-on;
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vcc5v0_sys>;
@@ -895,8 +900,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_clk &sdmmc1_cmd>;
 	sd-uhs-sdr104;
-	vmmc-supply = <&vcc_wl>;
-	vqmmc-supply = <&vccio_wl>;
 	status = "okay";
 
 	rtl8822cs: wifi@1 {

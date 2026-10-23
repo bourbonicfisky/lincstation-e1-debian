@@ -20,6 +20,15 @@ for pass in 1 2 3 4; do
  for f in /sys/class/hwmon/hwmon*/pwm1; do [ -w "$f" ] && echo 255 > "$f"; done
  sleep 2
 done
+# The RTL8822CS Wi-Fi module sometimes misses SDIO start-up at boot; re-probing the controller recovers it.
+for try in 1 2 3; do
+ ls /sys/bus/sdio/devices 2>/dev/null | grep -q . && break
+ echo "SDIO Wi-Fi not detected; re-probing (try $try)" >> /www/modules.log
+ echo fe2c0000.mmc > /sys/bus/platform/drivers/dwmmc_rockchip/unbind
+ sleep 1
+ echo fe2c0000.mmc > /sys/bus/platform/drivers/dwmmc_rockchip/bind
+ sleep 3
+done
 ip link set lo up
 ip link set eth0 address @MAC@
 ip link set eth0 up

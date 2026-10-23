@@ -46,7 +46,8 @@ The key ingredients were the aria2-to-root opening, an already-unlocked bootload
 | CPU performance | Geekbench 6: 230 single-core, 605 multi-core. Full result: [browser.geekbench.com/v6/cpu/19377989](https://browser.geekbench.com/v6/cpu/19377989) |
 | Hardware video decoding | H.264 and MPEG-2 up to 1080p, VP8 up to 4K, through GStreamer players such as Parole, after a one-line install the installer shows you (see [VALIDATION](docs/VALIDATION.md#hardware-video-decoding)). VLC and mpv decode on the CPU. |
 | HEVC/H.265, VP9, 4K H.264 | No hardware decoder with this kernel; CPU only |
-| Wi-Fi / Bluetooth | Not validated |
+| Wi-Fi (RTL8822CS, 2.4 and 5 GHz) | Working; scans both bands. Joining a network not yet tested. The SDIO link runs at 50 MHz high speed, not SDR104 |
+| Bluetooth (RTL8822CS) | Working; controller up and scanning. Pairing not yet tested |
 | NVMe slots | Not tested (empty on the test unit) |
 
 ## What you need

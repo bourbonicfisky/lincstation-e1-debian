@@ -66,6 +66,27 @@ The x86-64 Linux path uses the same emulation, but it hasn't been run end to end
 - OMV, the HDMI desktop and VNC were left running. This is one live-system run, not an average of isolated runs.
 - SSH, nginx and the OMV engine were active afterwards, with no failed systemd units.
 
+## Wi-Fi and Bluetooth
+
+The E1 uses a Realtek **RTL8822CS** module: Wi-Fi over SDIO (`mmc1`, ID `024c:c822`) and Bluetooth over `uart1` with the H5 protocol. The stock Android device tree identifies it as `rtl8822cs`.
+
+**What was wrong.** The upstream E1 device tree used the module's `vcc_wl` and `vccio_wl` GPIO regulators as switchable `vmmc`/`vqmmc` SDIO supplies. In that setup the card timed out during initialisation (`error -110`, then `Unexpected CMD11 timeout`), so Wi-Fi never appeared. The stock firmware keeps both supplies always on and doesn't attach them to the SDIO controller. Two more problems followed: the drivers load in the early boot environment, which only carried Ethernet firmware, and SDIO start-up occasionally failed at boot.
+
+**Changes:**
+
+- The device tree marks `vcc_wl` and `vccio_wl` `regulator-always-on`/`regulator-boot-on`, and drops `vmmc-supply`/`vqmmc-supply` from `sdmmc1`. A structural comparison of the binaries shows exactly these six property changes from the previous tested DTB. Stock DTBO overlays still apply, and the PMIC `system-power-controller` removal is intact. The new DTB SHA-256 is `1fce124bfe67804135ad04f40756754aa7b149fab9794a9dfc3f2716848da933`.
+- The early boot environment includes `rtw88/rtw8822c_fw.bin`, `rtw88/rtw8822c_wow_fw.bin`, `rtl_bt/rtl8822cs_fw.bin` and `rtl_bt/rtl8822cs_config.bin`.
+- If no SDIO card has appeared by the end of early boot, the init script re-probes the SDIO controller up to three times.
+- `iw`, `bluez` and `wireless-regdb` are now in the base system.
+
+**Results on the migrated E1:**
+
+- Re-probing the SDIO controller succeeded 6 times out of 6. Each time the link settled at 50 MHz high speed; SDR104 wasn't reached, so Wi-Fi throughput may be lower than under stock Android.
+- Across three consecutive reboots with all changes in place, `wlan0` and `hci0` came up automatically every time. Each boot took about 55–60 seconds, with no failed systemd units.
+- Wi-Fi firmware 9.9.15 loaded. A scan found 29 networks on both 2.4 GHz and 5 GHz, with signals up to −21 dBm.
+- Bluetooth firmware `0xb5d66dcb` and its config loaded. The controller `hci0` powered on, and a 12-second scan found 15 devices.
+- Not yet tested: joining a Wi-Fi network, throughput, Bluetooth pairing, and audio.
+
 ## Hardware video decoding
 
 Tested on the migrated E1 (Debian kernel 6.12.113, GStreamer 1.26), after installing `gstreamer1.0-plugins-bad`, `gstreamer1.0-plugins-good`, `gstreamer1.0-libav`, `gstreamer1.0-tools` and `v4l-utils`. The APT dry run removed nothing.
@@ -97,4 +118,4 @@ A 20-second 1080p30 H.264 High-profile clip (600 frames), decoded to `fakesink`:
 
 The generalized root-access/backup/flash/finish sequence has not been executed end to end on a second stock E1. The tested images above were not booted on hardware. The manual hardware path and individual desktop/VNC setup were exercised on the original NAS; that does not prove every newly generalized stage or recipient firmware variant.
 
-Do not infer support for other E1 firmware hashes, board revisions, kernel versions, power-off, hardware decoding beyond the tested H.264 path, 4K playback, Wi-Fi, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.
+Do not infer support for other E1 firmware hashes, board revisions, kernel versions, power-off, hardware decoding beyond the tested H.264 path, 4K playback, Wi-Fi association or throughput, Bluetooth pairing, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.

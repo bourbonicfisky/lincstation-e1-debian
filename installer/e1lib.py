@@ -7,7 +7,7 @@ ROOT_SIZE=50643042304
 ROOT_PARTUUID='43580000-0000-4463-8000-4fd300004373'
 KERNEL='6.12.113+deb13-arm64'
 STOCK={'boot_b.img':'78e4ceaac9c714a68859f00a4aaee1c3bd18d435eb935ed22198243d46b753da','dtbo_b.img':'59b971b4300092de56164904d6a1747276eb569acfc31c09dda6569aa5c8e57d','uboot_b.img':'fa9a48ed3b4ff7032b96511c4dbc4d80b076873f1051e61eda3687124e369f56'}
-DTB_SHA='7b885001fb809cba17d10a450b372eee2554c2c4043d896403faa93d46551ec1'
+DTB_SHA='1fce124bfe67804135ad04f40756754aa7b149fab9794a9dfc3f2716848da933'
 def require(ok,message):
     if not ok:raise RuntimeError(message)
 def run(*args,**kw):return subprocess.check_output(list(map(str,args)),text=True,**kw).strip()

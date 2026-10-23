@@ -41,7 +41,7 @@ def build(work):
     put('etc/resolv.conf',Path('/etc/resolv.conf').read_text())
     # No helper /dev bind mount: debootstrap supplies device nodes. No services start in the chroot.
     chroot('apt-get','update')
-    chroot('apt-get','-y','--no-install-recommends','install','linux-image-'+KERNEL,'busybox-static','kmod','openssh-server','systemd-sysv','udev','python3','iproute2','e2fsprogs','tar','curl','sudo','systemd-resolved','systemd-timesyncd','firmware-realtek','ethtool','btrfs-progs','smartmontools','initramfs-tools','gnupg','psmisc')
+    chroot('apt-get','-y','--no-install-recommends','install','linux-image-'+KERNEL,'busybox-static','kmod','openssh-server','systemd-sysv','udev','python3','iproute2','e2fsprogs','tar','curl','sudo','systemd-resolved','systemd-timesyncd','firmware-realtek','wireless-regdb','iw','bluez','ethtool','btrfs-progs','smartmontools','initramfs-tools','gnupg','psmisc')
     chroot('apt-mark','manual','linux-image-'+KERNEL)
     put('etc/hostname','lincstation\n');put('etc/hosts','127.0.0.1 localhost\n127.0.1.1 lincstation\n::1 localhost ip6-localhost ip6-loopback\n')
     put('etc/fstab','UUID='+plan['root_uuid']+' / ext4 defaults,noatime 0 1\n')
@@ -86,6 +86,10 @@ def build(work):
     for name in ['sh','false']:(ram/'bin'/name).symlink_to('busybox')
     shutil.copytree(root/'lib/modules'/KERNEL,ram/'lib/modules'/KERNEL,symlinks=True)
     shutil.copytree(root/'lib/firmware/rtl_nic',ram/'lib/firmware/rtl_nic',symlinks=True)
+    # Wi-Fi and Bluetooth drivers load during early boot, before the installed root is mounted.
+    for name in ['rtw88/rtw8822c_fw.bin','rtw88/rtw8822c_wow_fw.bin','rtl_bt/rtl8822cs_fw.bin','rtl_bt/rtl8822cs_config.bin']:
+        require((root/'lib/firmware'/name).is_file(),'Missing RTL8822CS firmware '+name)
+        (ram/'lib/firmware'/name).parent.mkdir(exist_ok=True);shutil.copy2(root/'lib/firmware'/name,ram/'lib/firmware'/name)
     subprocess.run(['depmod','-b',str(ram),KERNEL],check=True)
     for f in (ram/'lib/modules'/KERNEL).glob('modules.*'):f.chmod(0o644)
     def rput(path,text,mode=0o644):f=ram/path;f.write_text(text);f.chmod(mode)
