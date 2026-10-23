@@ -2,6 +2,8 @@
 
 Replace the stock Android/LincOS firmware on a **LincStation E1** NAS (Rockchip RK3568, 4 GB RAM, 64 GB eMMC) with plain **Debian 13 ARM64** and **OpenMediaVault 8**. You can keep it headless or add a lightweight LXDE desktop, a choice of app groups, and VNC.
 
+**[Read the full step-by-step installation guide](docs/INSTALL.md)** · [What you need](#what-you-need) · [Turning on ADB](#before-you-start-turn-on-adb-on-the-nas) · [Quick start](#quick-start) · [What was tested](docs/VALIDATION.md)
+
 > **Status: experimental.** The process below worked on one E1. The reusable installer in `installer/` has passed build and unit tests, but nobody has run it end to end on a second stock E1 yet. Read [docs/INSTALL.md](docs/INSTALL.md) completely before touching your NAS, and keep your backups.
 
 ## How I did it
@@ -147,7 +149,13 @@ installer/        the migration toolkit (run on the helper machine)
 docs/
   INSTALL.md        full step-by-step guide
   VALIDATION.md     what was measured and what wasn't
+  images/           screenshots for the README
 ```
+
+Documentation:
+
+- **[docs/INSTALL.md](docs/INSTALL.md)**: the full step-by-step installation guide
+- [docs/VALIDATION.md](docs/VALIDATION.md): what was measured on real hardware, and what wasn't
 
 Run the tests with `cd installer && python3 -m unittest discover -s tests -v`.
 
