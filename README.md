@@ -36,7 +36,7 @@ The key ingredients were the aria2-to-root opening, an already-unlocked bootload
 | Normal reboot | Working after the device-tree restart fix |
 | 2.5 GbE Ethernet (RTL8125B) | Working at 2.5 Gbps, factory MAC restored |
 | Both SATA bays | Working with 6 Gbps links |
-| Fan control | Working, with a quieter default curve (about 1,250–1,400 RPM at idle instead of 2,250). Editable; see [Fan curve](docs/INSTALL.md#fan-curve) |
+| Fan control | Working, with `quiet`, `balanced` (default) and `performance` profiles plus a custom curve. Switch with `sudo lincstation-fan performance`; see [Fan curve](docs/INSTALL.md#fan-curve) |
 | OpenMediaVault 8 web UI | Working |
 | HDMI desktop (LXDE), Mali-G52 GPU rendering | Working at 1080p60 with Panfrost/Mesa |
 | VNC (over an SSH tunnel) | Working |

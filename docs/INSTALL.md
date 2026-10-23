@@ -184,23 +184,35 @@ sudo python3 setup-vnc.py USER
 
 The kernel controls the fan from the CPU temperature, in three steps set by the device tree:
 
-| Step | Fan level (of 255) | Default: CPU above |
+| Step | Fan level (of 255) | Speed |
 | --- | --- | --- |
-| Quiet | 20–90 (about 1,250–1,400 RPM) | 25 °C |
-| Medium | 130–170 (about 2,250 RPM at 170) | 50 °C |
-| Full | 210–255 | 60 °C |
+| Quiet | 20–90 | about 1,000–1,400 RPM |
+| Medium | 130–170 | about 2,250 RPM at 170 |
+| Full | 210–255 | |
 
-The upstream device tree switches to the medium step at 35 °C and full at 45 °C. An idle E1 sits around 35–37 °C, so the fan whirred at medium all the time. The `lincstation-fan` service applies the quieter defaults above at every boot. The CPU still throttles at 70 °C and shuts down at 95 °C regardless of the fan curve.
+The `lincstation-fan` service sets the CPU temperatures where each step starts, at every boot. There are three profiles:
 
-To change the curve, edit `/etc/default/lincstation-fan` on the NAS:
+| Profile | Quiet above | Medium above | Full above | Notes |
+| --- | --- | --- | --- | --- |
+| `quiet` | 25 °C | 50 °C | 60 °C | Quietest. In testing the drives settled around 38 °C at idle |
+| `balanced` (default) | 25 °C | 45 °C | 55 °C | Quiet at idle (CPU around 38–41 °C), and speeds up sooner under load |
+| `performance` | 25 °C | 35 °C | 45 °C | The upstream curve. Coolest drives (about 33 °C), but the fan runs at about 2,250 RPM even at idle |
+| `custom` | your values | | | Uses `FAN_QUIET`, `FAN_MEDIUM` and `FAN_FULL` |
+
+Switch profiles and check the result on the NAS:
 
 ```sh
-sudo nano /etc/default/lincstation-fan          # FAN_QUIET, FAN_MEDIUM, FAN_FULL in °C
-sudo systemctl restart lincstation-fan          # apply now; it also applies at every boot
-cat /sys/class/hwmon/hwmon*/fan1_input          # fan speed in RPM
+sudo lincstation-fan performance     # or quiet, balanced, custom; saved and applied at every boot
+lincstation-fan status               # profile, trip points, CPU temperature, fan speed (sudo adds drive temperatures)
 ```
 
-The temperatures must be whole degrees with `FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70`. Invalid values are rejected, and the current curve stays in place. Below `FAN_QUIET` the fan stops completely. Keep `FAN_QUIET` below the idle temperature so the hard drives always get airflow. The curve only watches the CPU, so after changes check the drives with `sudo smartctl -A /dev/sda | grep Temperature`; under about 45 °C is comfortable for these drives. To go back to the upstream curve, set 25, 35 and 45.
+For your own curve, edit `/etc/default/lincstation-fan`. Set `FAN_PROFILE=custom` and `FAN_QUIET`, `FAN_MEDIUM` and `FAN_FULL` in whole degrees Celsius, then run `sudo systemctl restart lincstation-fan`. The rule is `FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70`. Invalid values are rejected, and the current curve stays in place.
+
+Things to keep in mind:
+
+- Below `FAN_QUIET` the fan stops completely. All profiles keep it at 25 °C, so the hard drives always get airflow.
+- The curve only watches the CPU. After a change, check the drives with `sudo lincstation-fan status`; under about 45 °C is comfortable for them.
+- The CPU still throttles at 70 °C and shuts down at 95 °C, whatever the profile.
 
 ## Kernel maintenance and recovery
 

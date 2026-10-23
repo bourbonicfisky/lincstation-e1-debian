@@ -1,11 +1,21 @@
-# LincStation E1 fan curve: CPU temperatures in whole degrees Celsius.
-# The fan has three steps, set by the device tree:
-#   quiet  = pwm 20-90 of 255  (about 1,250-1,400 RPM)
+# LincStation E1 fan curve. Switch with: sudo lincstation-fan quiet|balanced|performance
+# Check it with: lincstation-fan status
+#
+# The fan has three steps on the CPU temperature (fan levels come from the device tree):
+#   quiet  = pwm 20-90 of 255  (about 1,000-1,400 RPM)
 #   medium = pwm 130-170       (about 2,250 RPM at 170)
 #   full   = pwm 210-255
-# Below FAN_QUIET the fan stops. Keep it low enough that the drives always get airflow.
-# Must be FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70; the CPU throttles at 70 C.
-# Apply changes with: sudo systemctl restart lincstation-fan
+#
+# Profiles (quiet step / medium step / full step, in C):
+#   quiet        25 / 50 / 60   quietest; drives settled around 38 C at idle in testing
+#   balanced     25 / 45 / 55   default; quiet at idle, speeds up sooner under load
+#   performance  25 / 35 / 45   the upstream curve; coolest drives, about 2,250 RPM at idle
+#   custom       uses FAN_QUIET, FAN_MEDIUM and FAN_FULL below
+FAN_PROFILE=balanced
+
+# Used only when FAN_PROFILE=custom. Whole degrees, FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70
+# (the CPU throttles at 70 C). Below FAN_QUIET the fan stops; keep it low so the drives get airflow.
+# After editing, apply with: sudo systemctl restart lincstation-fan
 FAN_QUIET=25
-FAN_MEDIUM=50
-FAN_FULL=60
+FAN_MEDIUM=45
+FAN_FULL=55

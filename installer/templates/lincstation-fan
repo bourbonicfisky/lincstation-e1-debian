@@ -1,30 +1,80 @@
 #!/bin/sh
-# Apply the fan curve from /etc/default/lincstation-fan to the CPU thermal zone's active trip points.
-# The device tree gives the fan three steps: quiet (pwm 20-90), medium (130-170) and full (210-255).
+# LincStation E1 fan curve. The device tree gives the fan three steps on the CPU temperature:
+# quiet (pwm 20-90), medium (130-170) and full (210-255). This sets the temperatures where they start.
+#   lincstation-fan                         apply the profile in /etc/default/lincstation-fan (run at boot)
+#   lincstation-fan quiet|balanced|performance|custom   switch profile, save it, and apply
+#   lincstation-fan status                  show profile, trips, temperatures and fan speed
 set -eu
 CONFIG=/etc/default/lincstation-fan
-FAN_QUIET=25; FAN_MEDIUM=50; FAN_FULL=60
-[ -r "$CONFIG" ] && . "$CONFIG"
+
+zone=
+for z in /sys/class/thermal/thermal_zone*; do
+    [ "$(cat "$z/type" 2>/dev/null)" = cpu-thermal ] && zone=$z
+done
+[ -n "$zone" ] || { echo "lincstation-fan: cpu-thermal zone not found" >&2; exit 1; }
+fan=$(for h in /sys/class/hwmon/hwmon*; do [ "$(cat "$h/name")" = pwmfan ] && echo "$h"; done | head -1)
+
+# The three active (fan) trips, in ascending temperature order.
+fan_trips() {
+    for t in "$zone"/trip_point_*_type; do
+        [ "$(cat "$t")" = active ] || continue
+        i=${t##*trip_point_}; i=${i%_type}; echo "$(cat "$zone/trip_point_${i}_temp") $i"
+    done | sort -n | awk '{print $2}'
+}
+
+load_config() {
+    FAN_PROFILE=; FAN_QUIET=25; FAN_MEDIUM=45; FAN_FULL=55
+    [ -r "$CONFIG" ] && . "$CONFIG"
+    # Older configs had only the three temperatures; treat them as custom.
+    [ -n "$FAN_PROFILE" ] || FAN_PROFILE=custom
+}
+
+case "${1:-apply}" in
+status)
+    load_config
+    set -- $(fan_trips)
+    echo "profile:  $FAN_PROFILE"
+    echo "trips:    quiet above $(($(cat "$zone/trip_point_$1_temp") / 1000)) C, medium above $(($(cat "$zone/trip_point_$2_temp") / 1000)) C, full above $(($(cat "$zone/trip_point_$3_temp") / 1000)) C"
+    echo "CPU:      $(($(cat "$zone/temp") / 1000)) C"
+    [ -n "$fan" ] && echo "fan:      pwm $(cat "$fan/pwm1")/255, $(cat "$fan/fan1_input") RPM"
+    if [ "$(id -u)" = 0 ] && command -v smartctl >/dev/null; then
+        for d in /dev/sd?; do
+            [ -b "$d" ] && echo "drive:    $d $(smartctl -A "$d" | awk '/Temperature_Celsius/{print $10; exit}') C"
+        done
+    fi
+    exit 0;;
+quiet|balanced|performance|custom)
+    [ "$(id -u)" = 0 ] || { echo "lincstation-fan: run with sudo to change the profile" >&2; exit 1; }
+    if grep -q '^FAN_PROFILE=' "$CONFIG" 2>/dev/null; then
+        sed -i "s/^FAN_PROFILE=.*/FAN_PROFILE=$1/" "$CONFIG"
+    else
+        echo "FAN_PROFILE=$1" >> "$CONFIG"
+    fi;;
+apply) ;;
+*) echo "usage: lincstation-fan [quiet|balanced|performance|custom|status]" >&2; exit 2;;
+esac
+
+load_config
+case "$FAN_PROFILE" in
+quiet)       FAN_QUIET=25; FAN_MEDIUM=50; FAN_FULL=60;;
+balanced)    FAN_QUIET=25; FAN_MEDIUM=45; FAN_FULL=55;;
+performance) FAN_QUIET=25; FAN_MEDIUM=35; FAN_FULL=45;;
+custom) ;;
+*) echo "lincstation-fan: unknown FAN_PROFILE '$FAN_PROFILE' (quiet, balanced, performance or custom)" >&2; exit 1;;
+esac
 for v in "$FAN_QUIET" "$FAN_MEDIUM" "$FAN_FULL"; do
     case "$v" in ''|*[!0-9]*) echo "lincstation-fan: temperatures must be whole degrees Celsius" >&2; exit 1;; esac
 done
 if [ "$FAN_QUIET" -ge "$FAN_MEDIUM" ] || [ "$FAN_MEDIUM" -ge "$FAN_FULL" ] || [ "$FAN_FULL" -ge 70 ]; then
     echo "lincstation-fan: need FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70 (the CPU starts throttling at 70 C)" >&2; exit 1
 fi
-zone=
-for z in /sys/class/thermal/thermal_zone*; do
-    [ "$(cat "$z/type")" = cpu-thermal ] && zone=$z
-done
-[ -n "$zone" ] || { echo "lincstation-fan: cpu-thermal zone not found" >&2; exit 1; }
-# The three active (fan) trips, in the device tree's ascending temperature order.
-trips=$(for t in "$zone"/trip_point_*_type; do
-    [ "$(cat "$t")" = active ] || continue
-    i=${t##*trip_point_}; i=${i%_type}; echo "$(cat "$zone/trip_point_${i}_temp") $i"
-done | sort -n | awk '{print $2}')
-[ "$(echo "$trips" | wc -w)" -eq 3 ] || { echo "lincstation-fan: expected 3 active fan trips" >&2; exit 1; }
-set -- $trips
-# Raise the top trip first so the trips stay in ascending order while they change.
-echo $((FAN_FULL * 1000)) > "$zone/trip_point_$3_temp"
-echo $((FAN_MEDIUM * 1000)) > "$zone/trip_point_$2_temp"
+set -- $(fan_trips)
+[ $# -eq 3 ] || { echo "lincstation-fan: expected 3 active fan trips" >&2; exit 1; }
+# Write in an order that keeps the trips ascending while they change.
+if [ "$FAN_FULL" -ge $(($(cat "$zone/trip_point_$3_temp") / 1000)) ]; then
+    echo $((FAN_FULL * 1000)) > "$zone/trip_point_$3_temp"; echo $((FAN_MEDIUM * 1000)) > "$zone/trip_point_$2_temp"
+else
+    echo $((FAN_MEDIUM * 1000)) > "$zone/trip_point_$2_temp"; echo $((FAN_FULL * 1000)) > "$zone/trip_point_$3_temp"
+fi
 echo $((FAN_QUIET * 1000)) > "$zone/trip_point_$1_temp"
-echo "lincstation-fan: quiet above ${FAN_QUIET} C, medium above ${FAN_MEDIUM} C, full above ${FAN_FULL} C"
+echo "lincstation-fan: $FAN_PROFILE profile: quiet above ${FAN_QUIET} C, medium above ${FAN_MEDIUM} C, full above ${FAN_FULL} C"

@@ -77,7 +77,9 @@ The upstream device tree's fan trips are at 25, 35 and 45 °C. On the migrated E
 | +2 min | 34 °C | pwm 90, 1,348 RPM | 33/34 °C |
 | +3 min | 35 °C | pwm 90, 1,378 RPM | 34/34 °C |
 
-The drives are WD Red Plus 4 TB (WD40EFPX, 5,400 RPM). The `lincstation-fan` service replaced deliberately restored upstream trips with the configured ones. An invalid config (medium at 80 °C) was rejected, and the trips were left unchanged. These were short idle measurements. Drive temperatures under sustained load with the quieter curve haven't been measured yet.
+The drives are WD Red Plus 4 TB (WD40EFPX, 5,400 RPM). The `lincstation-fan` service replaced deliberately restored upstream trips with the configured ones. An invalid config (medium at 80 °C) was rejected, and the trips were left unchanged. After about two hours idle on the 25/50/60 °C curve (now the `quiet` profile), the drives had settled at 38 °C, with the CPU at 38–41 °C and the fan at 1,000–1,300 RPM. That led to the three profiles. `balanced` (25/45/55 °C) is the default, and `performance` keeps the upstream curve. Switching between all three profiles applied the expected trips and saved the choice, and a service restart reapplied the saved profile. An unknown profile name was rejected, and an older config file without `FAN_PROFILE` was treated as `custom`.
+
+These were idle measurements. Drive temperatures under sustained load with the quieter curve haven't been measured yet.
 
 ## Wi-Fi and Bluetooth
 
