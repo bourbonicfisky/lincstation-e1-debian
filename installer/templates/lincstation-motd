@@ -1,0 +1,4 @@
+#!/bin/sh
+echo
+echo "LincStation E1: run 'lincstation-help' for the guide (also ~/LINCSTATION-README.md)."
+echo "Fan: lincstation-fan status"

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Show the LincStation E1 guide.
+guide=/usr/local/share/doc/lincstation/README.md
+[ -r "$guide" ] || { echo "lincstation-help: $guide is missing" >&2; exit 1; }
+if [ -t 1 ] && command -v less >/dev/null; then exec less "$guide"; else exec cat "$guide"; fi

@@ -43,6 +43,9 @@ def main():
     sw=software_options(**creds.get('software',DEFAULT_SOFTWARE))
     if sw['desktop']:cmd('sh',str(BASE/'install-desktop.sh'),user,'--apps',','.join(sw['apps']) or 'none')
     if sw['vnc']:cmd('python3',str(BASE/'setup-vnc.py'),user,'--password-stdin',input=creds['vnc']+'\n',text=True)
+    guide=Path('/usr/local/share/doc/lincstation/README.md')
+    if guide.is_file():
+        copy=home/'LINCSTATION-README.md';shutil.copy2(guide,copy);copy.chmod(0o644);os.chown(copy,u.pw_uid,u.pw_gid)
     cmd('systemctl','is-active','--quiet','ssh','nginx','openmediavault-engined','lincstation-boot-success')
     require(not run('dpkg','--audit'),'Package audit requires attention')
     extras=(['LXDE']+sw['apps'] if sw['desktop'] else [])+(['VNC'] if sw['vnc'] else [])

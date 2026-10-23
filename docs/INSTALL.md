@@ -180,6 +180,10 @@ sudo python3 setup-vnc.py USER
 
 `setup-vnc.py` prompts for an eight-character VNC password; it does not place it in command arguments. The `--live` option can start it in an existing single Openbox/LXDE session. `install-desktop.sh USER --live` updates the panel/desktop while preserving open apps; the full LXDE session starts on the next `startx`.
 
+## The guide on the NAS
+
+`build` writes a guide to `/usr/local/share/doc/lincstation/README.md`, with the NAS's address and console user filled in. It covers everyday use, fan profiles, Wi-Fi and Bluetooth, video playback, updates and recovery. `finish` copies it to the console user's home as `~/LINCSTATION-README.md`, and the desktop setup adds a **LincStation Guide** icon. Run `lincstation-help` to read it in a terminal, and logins show a one-line pointer to it (`/etc/update-motd.d/90-lincstation`). The template is `installer/templates/lincstation-readme.md`.
+
 ## Fan curve
 
 The kernel controls the fan from the CPU temperature, in three steps set by the device tree:

@@ -59,6 +59,12 @@ def build(work):
     put('usr/local/sbin/lincstation-fan',(BASE/'templates/lincstation-fan').read_text(),0o755)
     put('etc/systemd/system/lincstation-fan.service',(BASE/'templates/lincstation-fan.service').read_text())
     put('etc/default/lincstation-fan',(BASE/'templates/lincstation-fan.default').read_text())
+    # On-device guide: lincstation-help, ~/LINCSTATION-README.md (copied by finish) and a login message.
+    guide=(BASE/'templates/lincstation-readme.md').read_text().replace('@NAS_IP@',plan['nas_ip']).replace('@USER@',plan['user'])
+    require(not re.search('@[A-Z_]+@',guide),'Unexpanded guide token')
+    put('usr/local/share/doc/lincstation/README.md',guide)
+    put('usr/local/bin/lincstation-help',(BASE/'templates/lincstation-help').read_text(),0o755)
+    put('etc/update-motd.d/90-lincstation',(BASE/'templates/lincstation-motd').read_text(),0o755)
     chroot('systemctl','enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success','lincstation-fan')
     (root/'run/sshd').mkdir(exist_ok=True);chroot('/usr/sbin/sshd','-t')
     for directory in ['bin','sbin','usr/bin','usr/sbin','proc','sys','dev/pts','run/sshd','tmp','www','etc/ssh','root/.ssh','lib/modules','lib/firmware','mnt']:(ram/directory).mkdir(parents=True,exist_ok=True)
