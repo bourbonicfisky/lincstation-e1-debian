@@ -1,0 +1,42 @@
+#!/bin/sh
+# Log a user in automatically on the HDMI console (tty1) and start the desktop, like Raspberry Pi OS.
+# There's no graphical login manager because one would conflict with OpenMediaVault.
+#   sudo lincstation-autologin on USER    sudo lincstation-autologin off    lincstation-autologin status
+set -eu
+dropin=/etc/systemd/system/getty@tty1.service.d/lincstation-autologin.conf
+marker='# lincstation-autologin'
+current_user() { if [ -f "$dropin" ]; then sed -n 's/.*--autologin \([^ ]*\) .*/\1/p' "$dropin" | head -1; fi; }
+profile_of() {
+    home=$(getent passwd "$1" | cut -d: -f6)
+    if [ -f "$home/.bash_profile" ]; then echo "$home/.bash_profile"; else echo "$home/.profile"; fi
+}
+case "${1:-}" in
+status)
+    u=$(current_user); if [ -n "$u" ]; then echo "on for $u"; else echo off; fi;;
+on)
+    [ "$(id -u)" = 0 ] || { echo "lincstation-autologin: run with sudo" >&2; exit 1; }
+    user=${2:?usage: sudo lincstation-autologin on USER}
+    uid=$(id -u "$user" 2>/dev/null) || { echo "lincstation-autologin: no user $user" >&2; exit 1; }
+    [ "$uid" -ge 1000 ] || { echo "lincstation-autologin: choose a normal user, not $user" >&2; exit 1; }
+    command -v startx >/dev/null || { echo "lincstation-autologin: the desktop isn't installed (no startx)" >&2; exit 1; }
+    old=$(current_user)
+    if [ -n "$old" ] && [ "$old" != "$user" ]; then sed -i "/$marker/,+1d" "$(profile_of "$old")"; fi
+    mkdir -p "$(dirname "$dropin")"
+    printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin %s --noclear %%I $TERM\n' "$user" > "$dropin"
+    profile=$(profile_of "$user")
+    if ! grep -q "$marker" "$profile" 2>/dev/null; then
+        # Only on the HDMI console, and only outside an existing desktop. If the desktop exits, you get a shell.
+        printf '%s: start the desktop after automatic login on the HDMI console\nif [ -z "${DISPLAY:-}" ] && [ "$(tty)" = /dev/tty1 ]; then startx; fi\n' "$marker" >> "$profile"
+        chown "$user:" "$profile"
+    fi
+    systemctl daemon-reload
+    echo "Autologin on for $user. It takes effect at the next boot (or: sudo systemctl restart getty@tty1).";;
+off)
+    [ "$(id -u)" = 0 ] || { echo "lincstation-autologin: run with sudo" >&2; exit 1; }
+    u=$(current_user)
+    rm -f "$dropin"; rmdir "$(dirname "$dropin")" 2>/dev/null || true
+    if [ -n "$u" ]; then sed -i "/$marker/,+1d" "$(profile_of "$u")"; fi
+    systemctl daemon-reload
+    echo "Autologin off. The HDMI console asks for a login again from the next boot.";;
+*) echo "usage: sudo lincstation-autologin on USER | off | status" >&2; exit 2;;
+esac

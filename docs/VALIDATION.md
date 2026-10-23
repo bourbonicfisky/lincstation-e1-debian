@@ -66,6 +66,12 @@ The x86-64 Linux path uses the same emulation, but it hasn't been run end to end
 - OMV, the HDMI desktop and VNC were left running. This is one live-system run, not an average of isolated runs.
 - SSH, nginx and the OMV engine were active afterwards, with no failed systemd units.
 
+## Power-off and automatic desktop login
+
+**Power-off.** `systemctl poweroff` dropped the NAS off the network about 8 seconds after the command, and it stayed off. The previous boot's journal ends with filesystem sync and "System Power Off". With the PMIC's `system-power-controller` property removed, Linux powers off through PSCI. Pressing the front power button brought it back into installed slot A in about 30–40 seconds. Wi-Fi, Bluetooth and the `balanced` fan profile were all active after that boot, with no failed units. Whether the board's power LEDs and fan go fully dark when it's off hasn't been confirmed by eye yet.
+
+**Automatic desktop login.** `lincstation-autologin on greg` added a `getty@tty1` autologin drop-in and a `startx` block to `~/.profile`. After restarting `getty@tty1`, a tty1 session started with Xorg, LXDE, lxpanel and the tunneled `x11vnc`. Running it twice didn't duplicate the profile block. `off` removed both the drop-in and the block. Unknown commands and the `root` user were rejected.
+
 ## Fan curve
 
 The upstream device tree's fan trips are at 25, 35 and 45 °C. On the migrated E1 the CPU idled at 36–37 °C, so the fan ran at pwm 170/255, about 2,230 RPM. Moving the trips to 25, 50 and 60 °C at runtime gave these results:

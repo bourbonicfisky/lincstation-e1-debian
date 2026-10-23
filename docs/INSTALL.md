@@ -66,6 +66,7 @@ OpenMediaVault is always installed. Choose the extras:
   [x] 3    Media players (VLC, mpv, FFmpeg, ALSA tools)
   [x] 4    Utilities (text editor, image viewer, archives, calculator, screenshots, htop)
   [x] 5    Remote desktop (VNC through an SSH tunnel)
+  [ ] 6    Log in to the desktop automatically at boot, like a Raspberry Pi
 Numbers to toggle (e.g. "3 5"), or Enter to accept:
 ```
 
@@ -77,6 +78,7 @@ Turning off the desktop (item 1) gives a headless NAS and turns off the app grou
 | `--desktop` | Install the LXDE desktop (the default) |
 | `--apps web,media,utilities` | Choose app groups; also `all` (the default) or `none` |
 | `--no-vnc` / `--vnc` | Skip or include tunneled VNC (included by default) |
+| `--autologin` / `--no-autologin` | Log in to the desktop automatically on the HDMI console at boot (off by default) |
 
 Without a terminal and without flags, `init` installs everything. The choices are saved in `config.json`. You can change them right up to the last step by passing the same flags to `finish`, for example `finish --no-desktop`.
 
@@ -149,6 +151,14 @@ The installer validates the eMMC CID, partition sizes/PARTUUID, matching recover
 OMV's official installation path is a minimal server and discourages desktop installations. This optional on-demand LXDE combination was exercised on the migrated E1; it is a custom combined NAS/desktop configuration, not an upstream-supported OMV desktop product. The installer refuses package removals or a conflicting display manager. SATA layout/shares are configured separately in OMV.
 
 ## Desktop and VNC
+
+**Automatic desktop login.** With item 6 or `--autologin`, the HDMI console logs your user in at boot and starts the desktop, like Raspberry Pi OS. There's no graphical login manager, because LightDM and similar conflict with OMV. Instead, a systemd `getty@tty1` drop-in logs the user in, and a two-line block in `~/.profile` runs `startx` on tty1. If the desktop exits, you get a shell rather than a restart loop. Anyone with a keyboard on the NAS reaches your desktop without a password; `sudo` still asks for one. Turn it on or off later:
+
+```sh
+sudo lincstation-autologin on USER     # or: off
+lincstation-autologin status
+```
+
 
 Log in locally as the configured console user and run:
 

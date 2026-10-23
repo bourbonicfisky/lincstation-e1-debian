@@ -10,6 +10,7 @@ Open this guide any time with `lincstation-help`. It's also at `~/LINCSTATION-RE
 - **OpenMediaVault (storage, shares, users, updates):** http://@NAS_IP@/ from any browser on your network. Log in as `admin`. The password is in `LOGIN.txt` in the private work folder on the computer you installed from.
 - **SSH:** `ssh @USER@@@NAS_IP@` with the key from the work folder. `@USER@` can use `sudo`. Root logs in with the key only.
 - **Desktop (if installed):** log in on the HDMI screen as `@USER@`, then run `startx`. Log out to free the memory again.
+- **Log in to the desktop automatically at boot:** `sudo lincstation-autologin on @USER@` (or `off`), like a Raspberry Pi. Anyone at the HDMI screen then gets your desktop without a password; `sudo` still asks for one.
 - **Remote desktop (if installed):** start the desktop first, then run `connect-vnc.sh` from the toolkit on your computer and open `vnc://127.0.0.1:15900`.
 
 ## Fan
@@ -71,6 +72,7 @@ The E1's bootloader doesn't read `/boot`. After a kernel update, a hook rebuilds
 | `lincstation-help` | Show this guide |
 | `lincstation-fan status` | Fan profile, temperatures, fan speed |
 | `sudo lincstation-fan quiet\|balanced\|performance` | Change the fan profile |
+| `sudo lincstation-autologin on @USER@\|off` | Boot straight into the desktop, or not |
 | `sudo smartctl -a /dev/sda` | Drive health (also `/dev/sdb`) |
 | `sudo lincstation-update-kernel --recovery` | Boot RAM recovery next time |
 | `systemctl --failed` | Show any failed services |

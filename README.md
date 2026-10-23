@@ -36,6 +36,8 @@ The key ingredients were the aria2-to-root opening, an already-unlocked bootload
 | Normal reboot | Working after the device-tree restart fix |
 | 2.5 GbE Ethernet (RTL8125B) | Working at 2.5 Gbps, factory MAC restored |
 | Both SATA bays | Working with 6 Gbps links |
+| Power-off and power-button start | Working; shuts down cleanly and starts again from the front button |
+| Automatic desktop login | Optional, like a Raspberry Pi; `sudo lincstation-autologin on USER` |
 | Power monitoring | Not available. The board has no power or current sensor, so measure total draw with a plug-in power meter |
 | Fan control | Working, with `quiet`, `balanced` (default) and `performance` profiles plus a custom curve. Switch with `sudo lincstation-fan performance`; see [Fan curve](docs/INSTALL.md#fan-curve) |
 | OpenMediaVault 8 web UI | Working |
@@ -121,10 +123,11 @@ OpenMediaVault is always installed. Choose the extras:
   [x] 3    Media players (VLC, mpv, FFmpeg, ALSA tools)
   [x] 4    Utilities (text editor, image viewer, archives, calculator, screenshots, htop)
   [x] 5    Remote desktop (VNC through an SSH tunnel)
+  [ ] 6    Log in to the desktop automatically at boot, like a Raspberry Pi
 Numbers to toggle (e.g. "3 5"), or Enter to accept:
 ```
 
-Turn off item 1 for a headless NAS. You can also skip the checklist with flags: `--no-desktop`, `--apps web,media` (or `all` / `none`), and `--no-vnc`. To change your mind later, pass the same flags to the final `finish` step.
+Turn off item 1 for a headless NAS. Item 6 boots straight into the desktop on the HDMI screen, like Raspberry Pi OS. That's handy during setup, and it means VNC works without anyone logging in at the console. You can also skip the checklist with flags: `--no-desktop`, `--apps web,media` (or `all` / `none`), `--no-vnc` and `--autologin`. To change your mind later, pass the same flags to the final `finish` step.
 
 Every step that writes to the NAS needs an explicit `--write`, and the steps pause at each reboot so you can check them. After each reboot, the installer waits for the NAS and tells you which system came back. If the NAS hangs, it tells you when to unplug and replug the power cable. The full procedure, including the recovery tests you must pass before erasing anything, is in **[docs/INSTALL.md](docs/INSTALL.md)**.
 

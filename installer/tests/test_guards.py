@@ -52,13 +52,17 @@ class Software(unittest.TestCase):
     def menu(self,*answers):
         it=iter(answers);return lib.choose_software(ask=lambda prompt:next(it),say=lambda *a:None)
     def test_enter_accepts_everything(self):
-        self.assertEqual(self.menu(''),{'desktop':True,'apps':['web','media','utilities'],'vnc':True})
+        self.assertEqual(self.menu(''),{'desktop':True,'apps':['web','media','utilities'],'vnc':True,'autologin':False})
     def test_toggle_groups(self):
-        self.assertEqual(self.menu('3 5',''),{'desktop':True,'apps':['web','utilities'],'vnc':False})
-        self.assertEqual(self.menu('2','2',''),{'desktop':True,'apps':['web','media','utilities'],'vnc':True})
+        self.assertEqual(self.menu('3 5',''),{'desktop':True,'apps':['web','utilities'],'vnc':False,'autologin':False})
+        self.assertEqual(self.menu('2','2',''),{'desktop':True,'apps':['web','media','utilities'],'vnc':True,'autologin':False})
     def test_no_desktop_clears_extras(self):
-        self.assertEqual(self.menu('1','4',''),{'desktop':False,'apps':[],'vnc':False})
-        self.assertEqual(lib.software_options(False,['web'],True),{'desktop':False,'apps':[],'vnc':False})
+        self.assertEqual(self.menu('1','4',''),{'desktop':False,'apps':[],'vnc':False,'autologin':False})
+        self.assertEqual(lib.software_options(False,['web'],True),{'desktop':False,'apps':[],'vnc':False,'autologin':False})
+    def test_autologin_toggle(self):
+        self.assertEqual(self.menu('6','')['autologin'],True)
+        self.assertEqual(self.menu('6','1',''),{'desktop':False,'apps':[],'vnc':False,'autologin':False})
+        self.assertEqual(lib.software_options(True,None,True,True)['autologin'],True)
     def test_parse_apps(self):
         self.assertEqual(lib.parse_apps('utilities, web'),['utilities','web'])
         self.assertEqual(lib.parse_apps('all'),list(lib.APP_GROUPS));self.assertEqual(lib.parse_apps('none'),[])

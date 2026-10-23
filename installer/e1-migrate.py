@@ -13,6 +13,7 @@ def main():
         q.add_argument('--desktop',action=argparse.BooleanOptionalAction,help='Install the LXDE desktop (--no-desktop for a headless NAS)')
         q.add_argument('--apps',metavar='LIST',help='Desktop app groups: comma-separated '+', '.join(APP_GROUPS)+', or all/none')
         q.add_argument('--vnc',action=argparse.BooleanOptionalAction,help='Install tunneled VNC for the desktop')
+        q.add_argument('--autologin',action=argparse.BooleanOptionalAction,help='Log in to the desktop automatically on the HDMI console at boot')
     q=sub.add_parser('init');q.add_argument('--nas',required=True,help='Reserved static IPv4 address/prefix, e.g. 192.168.1.50/24');q.add_argument('--gateway',required=True);q.add_argument('--dns');q.add_argument('--timezone',default='Etc/UTC');q.add_argument('--user',default='nas');q.add_argument('--adb-serial',help='Default NAS_IP:5555')
     software_flags(q)
     for name in ('root','probe','backup','build','status','verify-a','verify-b','verify-debian','verify-stock'):sub.add_parser(name)
@@ -24,11 +25,12 @@ def main():
     q.add_argument('--timeout',type=int,default=300,help='Seconds to wait before asking for a power cycle (default 300)');q.add_argument('--no-wait',action='store_true',help='Return immediately after requesting the reboot')
     a=p.parse_args();work=a.work.expanduser().resolve()
     def software(current,prompt):
-        flags=getattr(a,'desktop',None),getattr(a,'apps',None),getattr(a,'vnc',None)
-        if flags==(None,None,None):return choose_software(current) if prompt and sys.stdin.isatty() else software_options(**current)
+        current=dict(DEFAULT_SOFTWARE,**current)
+        flags=getattr(a,'desktop',None),getattr(a,'apps',None),getattr(a,'vnc',None),getattr(a,'autologin',None)
+        if flags==(None,None,None,None):return choose_software(current) if prompt and sys.stdin.isatty() else software_options(**current)
         desktop=current['desktop'] if a.desktop is None else a.desktop
-        if not desktop and (a.apps or a.vnc):print('No desktop selected; ignoring app groups and VNC.')
-        return software_options(desktop,current['apps'] if a.apps is None else parse_apps(a.apps),current['vnc'] if a.vnc is None else a.vnc)
+        if not desktop and (a.apps or a.vnc or a.autologin):print('No desktop selected; ignoring app groups, VNC and autologin.')
+        return software_options(desktop,current['apps'] if a.apps is None else parse_apps(a.apps),current['vnc'] if a.vnc is None else a.vnc,current['autologin'] if a.autologin is None else a.autologin)
     require(BASE!=work and BASE not in work.parents,'Keep private work outside the shareable toolkit')
     os.umask(0o077)
     if a.command=='init':
@@ -40,7 +42,7 @@ def main():
         sw=software(DEFAULT_SOFTWARE,prompt=True)
         work.mkdir(mode=0o700,parents=True)
         save(work/'config.json',dict(nas_ip=str(network.ip),prefix=network.network.prefixlen,gateway=str(gateway),dns=str(dns),timezone=a.timezone,user=a.user,adb_serial=a.adb_serial or str(network.ip)+':5555',run_id=uuid.uuid4().hex[:12],software=sw))
-        print('Extras: '+(', '.join(['desktop']+sw['apps']+(['vnc'] if sw['vnc'] else [])) if sw['desktop'] else 'none (headless OMV)')+'. Change them later with finish --desktop/--no-desktop, --apps and --vnc/--no-vnc.')
+        print('Extras: '+(', '.join(['desktop']+sw['apps']+(['vnc'] if sw['vnc'] else [])+(['autologin'] if sw['autologin'] else [])) if sw['desktop'] else 'none (headless OMV)')+'. Change them later with finish --desktop/--no-desktop, --apps and --vnc/--no-vnc and --autologin/--no-autologin.')
         subprocess.run(['ssh-keygen','-q','-t','ed25519','-N','','-f',str(work/'owner-key')],check=True)
         print('Created private work directory and a fresh migration SSH key. Keep this directory private.');return
     require((work/'config.json').is_file(),'Run init first')

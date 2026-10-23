@@ -64,11 +64,11 @@ def cpio(root,out):
             z.write(header+b'\0'*(-len(header)%4)+data+b'\0'*(-len(data)%4))
 # Optional software on top of OMV. Group names must match install-desktop.sh.
 APP_GROUPS={'web':'Web browser (Firefox ESR)','media':'Media players (VLC, mpv, FFmpeg, ALSA tools)','utilities':'Utilities (text editor, image viewer, archives, calculator, screenshots, htop)'}
-DEFAULT_SOFTWARE={'desktop':True,'apps':list(APP_GROUPS),'vnc':True}
-def software_options(desktop=True,apps=None,vnc=True):
+DEFAULT_SOFTWARE={'desktop':True,'apps':list(APP_GROUPS),'vnc':True,'autologin':False}
+def software_options(desktop=True,apps=None,vnc=True,autologin=False):
     apps=list(APP_GROUPS) if apps is None else [g for g in APP_GROUPS if g in apps]
-    if not desktop:return {'desktop':False,'apps':[],'vnc':False}
-    return {'desktop':True,'apps':apps,'vnc':bool(vnc)}
+    if not desktop:return {'desktop':False,'apps':[],'vnc':False,'autologin':False}
+    return {'desktop':True,'apps':apps,'vnc':bool(vnc),'autologin':bool(autologin)}
 def parse_apps(text):
     names=[g.strip() for g in text.split(',') if g.strip()]
     if names in (['all'],):return list(APP_GROUPS)
@@ -77,21 +77,21 @@ def parse_apps(text):
     return names
 def choose_software(current=None,ask=input,say=print):
     """Terminal checklist: type item numbers to toggle, Enter to accept."""
-    s=dict(current or DEFAULT_SOFTWARE);s['apps']=list(s['apps'])
-    items=[('desktop','Desktop (LXDE on HDMI, started with startx)')]+[('app:'+g,label) for g,label in APP_GROUPS.items()]+[('vnc','Remote desktop (VNC through an SSH tunnel)')]
+    s=dict(DEFAULT_SOFTWARE,**(current or {}));s['apps']=list(s['apps'])
+    items=[('desktop','Desktop (LXDE on HDMI, started with startx)')]+[('app:'+g,label) for g,label in APP_GROUPS.items()]+[('vnc','Remote desktop (VNC through an SSH tunnel)'),('autologin','Log in to the desktop automatically at boot, like a Raspberry Pi')]
     while True:
         say('\nOpenMediaVault is always installed. Choose the extras:')
         for n,(key,label) in enumerate(items,1):
-            on=s['desktop'] if key=='desktop' else key[4:] in s['apps'] if key.startswith('app:') else s['vnc']
+            on=s['desktop'] if key=='desktop' else key[4:] in s['apps'] if key.startswith('app:') else s[key]
             box='[-]' if key!='desktop' and not s['desktop'] else '[x]' if on else '[ ]'
             say(f'  {box} {n}  '+('' if key=='desktop' else '  ')+label)
         answer=ask('Numbers to toggle (e.g. "3 5"), or Enter to accept: ').strip()
-        if not answer:return software_options(s['desktop'],s['apps'],s['vnc'])
+        if not answer:return software_options(s['desktop'],s['apps'],s['vnc'],s['autologin'])
         for token in answer.replace(',',' ').split():
             if not token.isdigit() or not 1<=int(token)<=len(items):say('Ignoring '+repr(token));continue
             key=items[int(token)-1][0]
             if key=='desktop':s['desktop']=not s['desktop']
             elif not s['desktop']:say('Turn the desktop on first to choose '+items[int(token)-1][1].split(' (')[0].lower())
-            elif key=='vnc':s['vnc']=not s['vnc']
+            elif key in ('vnc','autologin'):s[key]=not s[key]
             else:
                 g=key[4:];s['apps']=[x for x in s['apps'] if x!=g] if g in s['apps'] else [x for x in APP_GROUPS if x in s['apps'] or x==g]

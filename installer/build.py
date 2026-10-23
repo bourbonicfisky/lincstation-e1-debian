@@ -64,6 +64,7 @@ def build(work):
     require(not re.search('@[A-Z_]+@',guide),'Unexpanded guide token')
     put('usr/local/share/doc/lincstation/README.md',guide)
     put('usr/local/bin/lincstation-help',(BASE/'templates/lincstation-help').read_text(),0o755)
+    put('usr/local/sbin/lincstation-autologin',(BASE/'templates/lincstation-autologin').read_text(),0o755)
     put('etc/update-motd.d/90-lincstation',(BASE/'templates/lincstation-motd').read_text(),0o755)
     chroot('systemctl','enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success','lincstation-fan')
     (root/'run/sshd').mkdir(exist_ok=True);chroot('/usr/sbin/sshd','-t')
