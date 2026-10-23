@@ -43,7 +43,8 @@ The key ingredients were the aria2-to-root opening, an already-unlocked bootload
 | Kernel updates through `apt` | Working; a hook rebuilds the boot image |
 | RAM recovery boot slot with SSH | Working |
 | Power-off | Not yet validated |
-| Hardware video decoding, 4K playback | Not validated (decoding is on the CPU) |
+| Hardware video decoding | H.264 and MPEG-2 up to 1080p, VP8 up to 4K, through GStreamer players after installing `gstreamer1.0-plugins-bad` (see [VALIDATION](docs/VALIDATION.md#hardware-video-decoding)). VLC and mpv decode on the CPU. |
+| HEVC/H.265, VP9, 4K H.264 | No hardware decoder with this kernel; CPU only |
 | Wi-Fi / Bluetooth | Not validated |
 | NVMe slots | Not tested (empty on the test unit) |
 

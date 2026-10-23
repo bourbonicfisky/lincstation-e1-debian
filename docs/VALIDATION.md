@@ -54,8 +54,35 @@ Running the build in emulation turned up four problems that a native Pi build hi
 
 The x86-64 Linux path uses the same emulation, but it hasn't been run end to end. Apple Silicon Macs run the container natively and haven't been tested yet either.
 
+## Hardware video decoding
+
+Tested on the migrated E1 (Debian kernel 6.12.113, GStreamer 1.26), after installing `gstreamer1.0-plugins-bad`, `gstreamer1.0-plugins-good`, `gstreamer1.0-libav`, `gstreamer1.0-tools` and `v4l-utils`. The APT dry run removed nothing.
+
+The kernel's `hantro_vpu` driver exposes the decoder as `/dev/video0`, the encoder as `/dev/video1`, and the RGA 2D block as `/dev/video2`. The decoder reports:
+
+| Codec | Max resolution |
+| --- | --- |
+| H.264 | 1920×1088 |
+| MPEG-2 | 1920×1088 |
+| VP8 | 3840×2160 |
+
+It outputs NV12. The board's device tree has no `rkvdec` node, so there's no hardware HEVC/H.265 or VP9 decoding, and no H.264 above 1080p.
+
+A 20-second 1080p30 H.264 High-profile clip (600 frames), decoded to `fakesink`:
+
+| Test | Hardware (`v4l2slh264dec`) | Software (`avdec_h264`) |
+| --- | --- | --- |
+| Fastest possible decode | 38 fps, 21% of total CPU | 79 fps, 80% of total CPU |
+| Real-time playback at 30 fps | 17% of total CPU | 33% of total CPU |
+
+- All 600 hardware-decoded frames were bit-identical to the software decode (SHA-1 per frame after conversion to I420).
+- The hardware decoder halves CPU use during normal playback, but it's slower than four-core software decoding at full speed. Here it was enough for 1080p30, not 1080p60.
+- GStreamer ranks `v4l2slh264dec` (primary + 1) above `avdec_h264` (primary), and `playbin` chose the hardware decoder automatically.
+- VLC and mpv decode through Debian's FFmpeg, which supports only stateful V4L2 decoders, so they can't use this one.
+- Parole was installed (4 packages, nothing removed), but it wasn't launched against a display. Its automatic decoder choice comes from the `playbin` test above.
+
 ## Limits
 
 The generalized root-access/backup/flash/finish sequence has not been executed end to end on a second stock E1. The tested images above were not booted on hardware. The manual hardware path and individual desktop/VNC setup were exercised on the original NAS; that does not prove every newly generalized stage or recipient firmware variant.
 
-Do not infer support for other E1 firmware hashes, board revisions, kernel versions, power-off, hardware video decoding, 4K playback, Wi-Fi, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.
+Do not infer support for other E1 firmware hashes, board revisions, kernel versions, power-off, hardware decoding beyond the tested H.264 path, 4K playback, Wi-Fi, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.
