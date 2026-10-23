@@ -36,14 +36,13 @@ The key ingredients were the aria2-to-root opening, an already-unlocked bootload
 | Normal reboot | Working after the device-tree restart fix |
 | 2.5 GbE Ethernet (RTL8125B) | Working at 2.5 Gbps, factory MAC restored |
 | Both SATA bays | Working with 6 Gbps links |
-| Fan control | Working |
+| Fan control | Working, with a quieter default curve (about 1,250–1,400 RPM at idle instead of 2,250). Editable; see [Fan curve](docs/INSTALL.md#fan-curve) |
 | OpenMediaVault 8 web UI | Working |
 | HDMI desktop (LXDE), Mali-G52 GPU rendering | Working at 1080p60 with Panfrost/Mesa |
 | VNC (over an SSH tunnel) | Working |
 | Kernel updates through `apt` | Working; a hook rebuilds the boot image |
 | RAM recovery boot slot with SSH | Working |
 | Power-off | Not yet validated |
-| Fan | Quieter default curve (about 1,250–1,400 RPM at idle instead of 2,250); editable, see [Fan curve](docs/INSTALL.md#fan-curve) |
 | CPU performance | Geekbench 6: 230 single-core, 605 multi-core. Full result: [browser.geekbench.com/v6/cpu/19377989](https://browser.geekbench.com/v6/cpu/19377989) |
 | Hardware video decoding | H.264 and MPEG-2 up to 1080p, VP8 up to 4K, through GStreamer players such as Parole, after a one-line install the installer shows you (see [VALIDATION](docs/VALIDATION.md#hardware-video-decoding)). VLC and mpv decode on the CPU. |
 | HEVC/H.265, VP9, 4K H.264 | No hardware decoder with this kernel; CPU only |
