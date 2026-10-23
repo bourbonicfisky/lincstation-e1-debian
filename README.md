@@ -124,6 +124,12 @@ Turn off item 1 for a headless NAS. You can also skip the checklist with flags: 
 
 Every step that writes to the NAS needs an explicit `--write`, and the steps pause at each reboot so you can check them. After each reboot, the installer waits for the NAS and tells you which system came back. If the NAS hangs, it tells you when to unplug and replug the power cable. The full procedure, including the recovery tests you must pass before erasing anything, is in **[docs/INSTALL.md](docs/INSTALL.md)**.
 
+## Using an AI coding agent
+
+I worked out this migration with AI coding agents, and the repository contains everything an agent needs to run the installer for you: the staged CLI, the full guide in [docs/INSTALL.md](docs/INSTALL.md), and agent-specific rules in [AGENTS.md](AGENTS.md). Open the repository in an agent such as Claude Code or Codex on your helper computer and ask it to follow AGENTS.md.
+
+Some steps still need you. The agent should stop and ask you to turn on ADB at the NAS screen, to power-cycle the NAS if it hangs, to pick your software extras, and to confirm before anything is erased. Don't let an agent bypass the installer's safety checks.
+
 ## Safety notes
 
 - **Back up first.** The `backup` step saves the whole eMMC. Keep that image somewhere safe.
@@ -156,6 +162,7 @@ Documentation:
 
 - **[docs/INSTALL.md](docs/INSTALL.md)**: the full step-by-step installation guide
 - [docs/VALIDATION.md](docs/VALIDATION.md): what was measured on real hardware, and what wasn't
+- [AGENTS.md](AGENTS.md): instructions for AI coding agents running the installer
 
 Run the tests with `cd installer && python3 -m unittest discover -s tests -v`.
 
