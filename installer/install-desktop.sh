@@ -39,3 +39,7 @@ fi
 apt-get -y --no-install-recommends install $packages
 python3 "$base/configure-desktop.py" "$user" $live
 echo "Ready: log in locally as $user and run startx. No passwords were changed."
+echo
+echo "Hardware video playback: VLC and mpv decode on the CPU. For hardware H.264/MPEG-2 (up to 1080p) and VP8 decoding, run:"
+echo "  sudo apt-get install --no-install-recommends gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav parole"
+echo "and play videos in Parole or another GStreamer player. See ~/Desktop-README.txt."

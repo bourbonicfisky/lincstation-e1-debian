@@ -32,4 +32,8 @@ if sw['vnc']:text+='VNC password: '+creds['vnc']+'\nVNC requires an active HDMI 
 text+='SSH key: '+str(work/'owner-key')+'\n'
 (work/'LOGIN.txt').write_text(text);(work/'LOGIN.txt').chmod(0o600)
 print('Setup verified. Private credentials:',work/'LOGIN.txt')
+if sw['desktop']:
+    print('\nHardware video playback: VLC and mpv decode on the CPU. For hardware H.264/MPEG-2 (up to 1080p) and VP8 decoding,')
+    print('install GStreamer and a GStreamer player on the NAS, then play videos in Parole:')
+    print('  sudo apt-get install --no-install-recommends gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav parole')
 print('Keep finish.log and the entire private work directory; do not distribute them.')
