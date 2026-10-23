@@ -67,13 +67,30 @@ On Debian, install `adb`, `openssh-client` and `python3`. On a Mac, install `adb
 The installer gets in through Android's debugging connection (ADB) over the network, and you have to switch it on at the NAS itself. You'll need an HDMI monitor and a USB keyboard (a mouse helps) plugged into the NAS.
 
 1. **Open Android Settings.** The NAS boots into the LincOS kiosk screen. Press **Ctrl+N** on the keyboard to open Settings.
-2. **Turn on Developer options** if they aren't already on: go to *About device* and tap *Build number* seven times. On some units this is already done.
-3. **Connect the NAS to Wi-Fi**, even if you'll use the wired connection. Android won't turn on wireless debugging without a Wi-Fi network. The installer itself still uses the wired IP.
-4. **Turn on wireless debugging**: *Settings → System → Developer options → Wireless debugging*. If there's also a legacy "ADB over network" toggle, turn that on too.
-5. **Allow ADB through the LincOS firewall.** Add a rule allowing **TCP port 5555** from your LAN, for example `192.168.1.0/24`.
-6. **Test it from the helper** with `adb connect NAS_IP:5555`. An **"Allow debugging?"** prompt then appears on the NAS screen. Tick *Always allow from this computer* and accept.
+2. **Connect the NAS to Wi-Fi**, even if you'll use the wired connection. Android won't turn on wireless debugging without a Wi-Fi network. The installer itself still uses the wired IP.
+3. **Open Developer options** (*Settings → System → Developer options*) and make sure *Use developer options* is on. It was already on on the tested unit. If Developer options isn't listed, open *About device* and tap *Build number* seven times.
 
-Network ADB switches off again whenever Android restarts. If `adb` can't connect after a reboot, repeat step 4 (and accept the prompt again if it asks).
+   ![Developer options with "Use developer options" turned on](docs/images/adb-1-developer-options.png)
+
+4. **Turn on Wireless debugging, then open it.** Flip the switch, then **click the words "Wireless debugging" to the left of the switch**. The switch only turns it on; clicking the label opens its settings screen.
+
+   ![The Wireless debugging row in Developer options](docs/images/adb-2-open-wireless-debugging.png)
+
+5. **Pair the helper.** The Wireless debugging screen shows the NAS's *IP address & Port*. The port is random, not 5555. Choose *Pair device with pairing code*, then on the helper run:
+
+   ```sh
+   adb pair NAS_IP:PAIRING_PORT          # enter the six-digit code shown on the NAS
+   adb connect NAS_IP:PORT               # the "IP address & Port" from this screen
+   adb tcpip 5555                        # switch ADB to the fixed port the installer uses
+   adb connect NAS_IP:5555
+   ```
+
+   ![The Wireless debugging screen with its IP address, port and pairing option](docs/images/adb-3-wireless-debugging-screen.png)
+
+6. **Allow ADB through the LincOS firewall.** Add a rule allowing **TCP port 5555** from your LAN, for example `192.168.1.0/24`. If pairing or the first connect is refused, the firewall may also be blocking the random ports shown on the Wireless debugging screen.
+7. **Accept the prompt.** When the helper connects, an **"Allow debugging?"** prompt appears on the NAS screen. Tick *Always allow from this computer* and accept. `adb devices` should list the NAS as `device`, not `unauthorized`.
+
+Network ADB switches off again whenever Android restarts. If `adb connect NAS_IP:5555` fails after a reboot, repeat steps 4 and 5 (pairing is remembered, so `adb connect` to the shown port, then `adb tcpip 5555`, is usually enough).
 
 ## Quick start
 

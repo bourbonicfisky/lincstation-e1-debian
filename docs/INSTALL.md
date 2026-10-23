@@ -29,18 +29,16 @@ On an **x86-64 helper**, `build` also installs `qemu-user` and `qemu-user-binfmt
 
 ## Enabling network ADB on the NAS
 
-You'll need an HDMI monitor and a USB keyboard (a mouse helps) connected to the NAS.
+Follow the illustrated steps in the [README](../README.md#before-you-start-turn-on-adb-on-the-nas). In short:
 
-1. At the LincOS kiosk screen, press **Ctrl+N** to open Android Settings.
-2. If *Developer options* isn't listed under *System*, open *About device* and tap *Build number* seven times. Some units ship with it already on.
-3. Join a **Wi-Fi network**, even when you use Ethernet. Android 12 only lets you turn on *Wireless debugging* while connected to Wi-Fi. The toolkit uses the wired address you give `init`.
-4. Turn on *Developer options → Wireless debugging*, plus the legacy network-ADB toggle if your firmware shows one.
-5. In the LincOS firewall settings, allow inbound **TCP 5555** from your LAN subnet (e.g. `192.168.1.0/24`). Without this rule, the connection is blocked even with debugging on.
-6. From the helper, run `adb connect NAS_IP:5555`. Accept the **"Allow debugging?"** prompt on the NAS screen and tick *Always allow from this computer*. `adb devices` should then list the NAS as `device`, not `unauthorized`.
+1. With an HDMI monitor and USB keyboard on the NAS, press **Ctrl+N** at the LincOS kiosk screen to open Android Settings.
+2. Join a **Wi-Fi network**, even when you use Ethernet. Android 12 only allows *Wireless debugging* while connected to Wi-Fi. The toolkit uses the wired address you give `init`.
+3. In *Developer options*, turn on *Wireless debugging*, then click the **label** (not the switch) to open its screen. It shows a random `IP:port` and a *Pair device with pairing code* option.
+4. From the helper: `adb pair IP:PAIRING_PORT` (enter the code), `adb connect IP:PORT`, then `adb tcpip 5555` and `adb connect NAS_IP:5555`. The toolkit expects port 5555; to use another, pass `init --adb-serial IP:PORT`.
+5. In the LincOS firewall settings, allow inbound **TCP 5555** from your LAN subnet (e.g. `192.168.1.0/24`). If pairing is refused, the firewall may also be blocking the random wireless-debugging ports.
+6. Accept the **"Allow debugging?"** prompt on the NAS screen, ticking *Always allow from this computer*. `adb devices` should list the NAS as `device`, not `unauthorized`.
 
-If port 5555 doesn't answer, the *Wireless debugging* screen shows its own `IP:port` and a pairing option. Pair with `adb pair IP:PORT`, then connect to the port it shows and pass that address to `init --adb-serial IP:PORT`. The tested unit used port 5555.
-
-**Network ADB resets whenever Android restarts.** After any reboot back into stock Android (for example the `return-stock` test), repeat step 4 before running `root` again.
+**Network ADB resets whenever Android restarts.** After any reboot back into stock Android (for example the `return-stock` test), turn Wireless debugging on again, reconnect to the port it shows, and run `adb tcpip 5555` before running `root` again.
 
 ## Staged migration
 
