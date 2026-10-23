@@ -18,7 +18,7 @@ def build(work):
     out.mkdir(mode=0o700);root=out/'rootfs';ram=out/'ram';assets=out/'boot-assets'
     env=dict(os.environ,DEBIAN_FRONTEND='noninteractive',LC_ALL='C')
     subprocess.run(['apt-get','update'],env=env,check=True)
-    subprocess.run(['apt-get','-y','--no-install-recommends','install','ca-certificates','debootstrap','gcc','libc6-dev','device-tree-compiler','kmod',*(['qemu-user','qemu-user-binfmt'] if emulated else [])],env=env,check=True)
+    subprocess.run(['apt-get','-y','--no-install-recommends','install','ca-certificates','debootstrap','gcc','binutils','libc6-dev','device-tree-compiler','kmod','openssh-client',*(['qemu-user','qemu-user-binfmt'] if emulated else [])],env=env,check=True)
     if emulated:
         # x86-64 helper: the kernel hands ARM64 binaries to QEMU. The F (fix-binary) flag lets
         # chrooted ARM64 programs run without copying the emulator into the target root.
@@ -37,7 +37,8 @@ def build(work):
     def chroot(*args):subprocess.run(['chroot',str(root),'/usr/bin/env','DEBIAN_FRONTEND=noninteractive','LC_ALL=C',*args],check=True)
     put('usr/sbin/policy-rc.d','#!/bin/sh\nexit 101\n',0o755)
     put('etc/apt/sources.list','deb https://deb.debian.org/debian trixie main non-free-firmware\ndeb https://deb.debian.org/debian trixie-updates main non-free-firmware\ndeb https://security.debian.org/debian-security trixie-security main non-free-firmware\n')
-    put('etc/resolv.conf','nameserver '+plan['dns']+'\n')
+    # Resolve through the helper's DNS while building; the NAS's own DNS server may not be reachable from here.
+    put('etc/resolv.conf',Path('/etc/resolv.conf').read_text())
     # No helper /dev bind mount: debootstrap supplies device nodes. No services start in the chroot.
     chroot('apt-get','update')
     chroot('apt-get','-y','--no-install-recommends','install','linux-image-'+KERNEL,'busybox-static','kmod','openssh-server','systemd-sysv','udev','python3','iproute2','e2fsprogs','tar','curl','sudo','systemd-resolved','systemd-timesyncd','firmware-realtek','ethtool','btrfs-progs','smartmontools','initramfs-tools','gnupg','psmisc')
@@ -55,7 +56,7 @@ def build(work):
     put('etc/network/interfaces','auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet static\n    address '+plan['nas_ip']+'/'+str(plan['prefix'])+'\n    gateway '+plan['gateway']+'\n    dns-nameservers '+plan['dns']+'\n')
     put('usr/local/sbin/lincstation-boot-success',(BASE/'templates/lincstation-boot-success').read_text(),0o755)
     put('etc/systemd/system/lincstation-boot-success.service',(BASE/'templates/lincstation-boot-success.service').read_text())
-    subprocess.run(['systemctl','--root='+str(root),'enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success'],check=True)
+    chroot('systemctl','enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success')
     (root/'run/sshd').mkdir(exist_ok=True);chroot('/usr/sbin/sshd','-t')
     for directory in ['bin','sbin','usr/bin','usr/sbin','proc','sys','dev/pts','run/sshd','tmp','www','etc/ssh','root/.ssh','lib/modules','lib/firmware','mnt']:(ram/directory).mkdir(parents=True,exist_ok=True)
     for d in ram.rglob('*'):
@@ -63,11 +64,19 @@ def build(work):
     (ram/'tmp').chmod(0o1777);(ram/'root').chmod(0o700);(ram/'root/.ssh').chmod(0o700)
     def copyfile(name,dest=None):
         src=root/name.lstrip('/');dst=ram/(dest or name).lstrip('/');dst.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dst,follow_symlinks=True)
+    # Resolve shared libraries by reading ELF headers with readelf, not by running ldd:
+    # ldd executes target code, which can crash under QEMU emulation (x86-64 helpers, Intel Macs).
+    libdirs=['lib/aarch64-linux-gnu','usr/lib/aarch64-linux-gnu','lib','usr/lib'];copied=set()
     def binary(name,dest=None):
-        copyfile(name,dest)
-        result=subprocess.run(['chroot',str(root),'/usr/bin/ldd',name],capture_output=True,text=True)
-        for lib in set(re.findall(r'(?:=>\s*)?(/[^\s]+)',result.stdout)):
-            if (root/lib.lstrip('/')).is_file():copyfile(lib)
+        copyfile(name,dest);queue=[name]
+        while queue:
+            current=queue.pop();info=run('readelf','-dlW',root/current.lstrip('/'))
+            for interp in re.findall(r'program interpreter: (/[^\]]+)\]',info):
+                if interp not in copied:copied.add(interp);copyfile(interp)
+            for lib in re.findall(r'\(NEEDED\)\s+Shared library: \[([^\]]+)\]',info):
+                found=next(('/'+d+'/'+lib for d in libdirs if (root/d/lib).is_file()),None)
+                require(found,'Shared library '+lib+' needed by '+current+' is missing from the build root')
+                if found not in copied:copied.add(found);copyfile(found);queue.append(found)
     binary('/usr/bin/busybox','/bin/busybox');binary('/usr/bin/kmod','/sbin/modprobe')
     for name in ['/usr/sbin/sshd','/usr/lib/openssh/sshd-auth','/usr/lib/openssh/sshd-session','/usr/sbin/e2fsck','/usr/sbin/mkfs.ext4','/usr/sbin/blkid','/usr/sbin/blockdev','/usr/bin/python3.13','/usr/bin/tar']:binary(name)
     shutil.copytree(root/'usr/lib/python3.13',ram/'usr/lib/python3.13',symlinks=True)
@@ -138,6 +147,7 @@ def build(work):
     (root/'usr/local/sbin/lincstation-enable-kernel-hook').chmod(0o755)
     put('usr/local/lib/lincstation/kernel-hook.pending','#!/bin/sh\nset -eu\n[ -n "${1:-}" ] || exit 0\nexec /usr/local/sbin/lincstation-update-kernel --install "$1"\n',0o755)
     (root/'usr/sbin/policy-rc.d').unlink();chroot('apt-get','clean');put('etc/machine-id','')
+    if not (root/'etc/resolv.conf').is_symlink():put('etc/resolv.conf','nameserver '+plan['dns']+'\n')
     for f in (root/'var/log').rglob('*'):
         if f.is_file() and not f.is_symlink():f.write_bytes(b'')
     for mode,dir_,port in [('installed',root,22),('recovery',ram,2223)]:

@@ -30,6 +30,30 @@ These are **private test artifacts, not downloads or images to flash**. Recipien
 - Final maintenance-helper additions compiled in the clean target root; installed SSH configuration validated and dpkg audit was clean. These additions were checked after the initial archive build, so that archive's hash above identifies the initial test artifact.
 - Build publication ownership was corrected and checked: the non-root helper user can read manifests, images, root archive and host-key pins; extracted rootfs ownership remains intact.
 
+## macOS helper build (Intel Mac, Docker Desktop)
+
+The `build` stage ran through the macOS container path on an Intel Mac. Docker Desktop emulated ARM64 for the whole build, which took about 48 minutes. It used the tested unit's stock boot images, a new SSH key, a made-up eMMC ID and MAC address, and a documentation-only IP address. Nothing was flashed.
+
+| Artifact | Bytes |
+| --- | ---: |
+| Recovery image | 143,413,248 |
+| Installed boot image | 143,415,296 |
+| Root archive | 308,405,501 |
+
+- All three artifacts matched the build manifest's hashes after being copied out of the container.
+- Both images fit the 157,286,400-byte boot partition, and each contains the hash-pinned tested DTB.
+- The kernel was byte-identical to the one booted on the E1 (37,728,192 bytes).
+- Both RAM disks contain an executable 0755 `/init`, BusyBox, SSH, Python 3.13 with its shared libraries, and the kernel modules. The recovery Python ran inside the build.
+
+Running the build in emulation turned up four problems that a native Pi build hides, all now fixed:
+
+- The minimal Debian image has no CA certificates, so HTTPS downloads failed.
+- The build root used the NAS's DNS server, which may not be reachable from the helper.
+- The helper lacked `systemctl` and `ssh-keygen`.
+- `ldd` crashes under QEMU, which silently left out Python's libraries. Libraries are now found with `readelf`, and a missing library stops the build.
+
+The x86-64 Linux path uses the same emulation, but it hasn't been run end to end. Apple Silicon Macs run the container natively and haven't been tested yet either.
+
 ## Limits
 
 The generalized root-access/backup/flash/finish sequence has not been executed end to end on a second stock E1. The tested images above were not booted on hardware. The manual hardware path and individual desktop/VNC setup were exercised on the original NAS; that does not prove every newly generalized stage or recipient firmware variant.

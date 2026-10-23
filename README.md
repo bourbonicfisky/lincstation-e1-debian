@@ -60,7 +60,7 @@ The helper does the backup, builds the Debian images and drives every step over 
 | Debian 13 on ARM64 (e.g. Raspberry Pi) | Natively | Yes, the original migration used a Pi |
 | Debian 13 on x86-64 | Through QEMU ARM64 emulation; slower | Not yet |
 | macOS on Apple Silicon | In a temporary Debian ARM64 container | Not yet |
-| macOS on Intel | In a temporary Debian container under Docker's ARM64 emulation; slowest | Not yet |
+| macOS on Intel | In a temporary Debian container under Docker's ARM64 emulation; slowest | Build tested (about 50 minutes); not yet used for a real install |
 
 On Debian, install `adb`, `openssh-client` and `python3`. On a Mac, install `adb` with `brew install android-platform-tools`, plus Docker Desktop, OrbStack or Colima.
 
