@@ -1,0 +1,45 @@
+#!/bin/busybox sh
+export PATH=/usr/sbin:/usr/bin:/bin:/sbin
+/bin/busybox --install -s /bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /run/sshd
+mount -t devpts devpts /dev/pts
+exec </dev/console >/dev/console 2>&1
+hostname lincstation-recovery
+# Recovery stays up for authenticated maintenance; it never mounts disks automatically.
+echo "LincStation Debian recovery; SSH key authentication on TCP 2223"
+for pass in 1 2 3 4; do
+ for alias in $(find /sys/devices -name modalias -type f); do
+  /sbin/modprobe -b "$(cat "$alias")" >> /www/modules.log 2>&1
+ done
+ for module in gpio_rockchip rk808_regulator phy_rockchip_naneng_combphy phy_rockchip_snps_pcie3 sdhci_of_dwcmshc dw_mmc_rockchip ahci_platform r8169 pwm_rockchip pwm_fan rockchip_thermal; do
+  /sbin/modprobe "$module" >> /www/modules.log 2>&1
+ done
+ for f in /sys/class/hwmon/hwmon*/pwm1; do [ -w "$f" ] && echo 255 > "$f"; done
+ sleep 2
+done
+ip link set lo up
+ip link set eth0 address @MAC@
+ip link set eth0 up
+ip addr add @ADDRESS@ dev eth0
+ip route add default via @GATEWAY@
+
+/usr/sbin/sshd -f /etc/ssh/sshd_config -E /www/sshd.log
+sleep 5
+{
+ echo "LINCSTATION_DEBIAN_RECOVERY_20261022"
+ id
+ uname -a
+ cat /proc/cmdline
+ cat /proc/mounts
+ cat /proc/partitions
+ ip address
+ cat /proc/modules
+ for f in /sys/class/thermal/thermal_zone*/temp; do echo "$f"; cat "$f"; done
+ for f in /sys/class/hwmon/hwmon*/pwm1; do echo "$f"; cat "$f"; done
+} > /www/proof.txt 2>&1
+dmesg > /www/dmesg.txt
+cat /www/proof.txt
+while :; do sleep 10; done

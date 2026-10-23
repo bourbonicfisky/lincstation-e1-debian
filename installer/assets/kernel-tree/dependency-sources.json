@@ -1,0 +1,20 @@
+{
+  "include/dt-bindings/gpio/gpio.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/gpio/gpio.h",
+  "include/dt-bindings/input/input.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/input/input.h",
+  "include/dt-bindings/input/linux-event-codes.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/input/linux-event-codes.h",
+  "include/uapi/linux/input-event-codes.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/uapi/linux/input-event-codes.h",
+  "include/dt-bindings/leds/common.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/leds/common.h",
+  "include/dt-bindings/pinctrl/rockchip.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/pinctrl/rockchip.h",
+  "include/dt-bindings/soc/rockchip,vop2.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/soc/rockchip,vop2.h",
+  "arch/arm64/boot/dts/rockchip/rk3568.dtsi": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/arch/arm64/boot/dts/rockchip/rk3568.dtsi",
+  "arch/arm64/boot/dts/rockchip/rk356x.dtsi": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/arch/arm64/boot/dts/rockchip/rk356x.dtsi",
+  "include/dt-bindings/clock/rk3568-cru.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/clock/rk3568-cru.h",
+  "include/dt-bindings/interrupt-controller/arm-gic.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/interrupt-controller/arm-gic.h",
+  "include/dt-bindings/interrupt-controller/irq.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/interrupt-controller/irq.h",
+  "include/dt-bindings/phy/phy.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/phy/phy.h",
+  "include/dt-bindings/power/rk3568-power.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/power/rk3568-power.h",
+  "include/dt-bindings/soc/rockchip,boot-mode.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/soc/rockchip,boot-mode.h",
+  "include/dt-bindings/thermal/thermal.h": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/include/dt-bindings/thermal/thermal.h",
+  "arch/arm64/boot/dts/rockchip/rk3568-pinctrl.dtsi": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/arch/arm64/boot/dts/rockchip/rk3568-pinctrl.dtsi",
+  "arch/arm64/boot/dts/rockchip/rockchip-pinconf.dtsi": "https://raw.githubusercontent.com/gregkh/linux/v6.12.113/arch/arm64/boot/dts/rockchip/rockchip-pinconf.dtsi"
+}

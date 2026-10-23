@@ -1,0 +1,16 @@
+# Never commit private migration state, keys, backups or built images.
+__pycache__/
+*.pyc
+.DS_Store
+work/
+private/
+backups/
+*.img
+*.img.gz
+*.tar.gz
+*.cpio.gz
+owner-key*
+*known_hosts
+credentials.json
+LOGIN.txt
+plan.json

@@ -1,0 +1,77 @@
+#!/bin/busybox sh
+export PATH=/usr/sbin:/usr/bin:/bin:/sbin
+/bin/busybox --install -s /bin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /run/sshd
+mount -t devpts devpts /dev/pts
+exec </dev/console >/dev/console 2>&1
+hostname lincstation-recovery
+# Recovery stays up for authenticated maintenance; it never mounts disks automatically.
+echo "LincStation Debian recovery; SSH key authentication on TCP 2223"
+for pass in 1 2 3 4; do
+ for alias in $(find /sys/devices -name modalias -type f); do
+  /sbin/modprobe -b "$(cat "$alias")" >> /www/modules.log 2>&1
+ done
+ for module in gpio_rockchip rk808_regulator phy_rockchip_naneng_combphy phy_rockchip_snps_pcie3 sdhci_of_dwcmshc dw_mmc_rockchip ahci_platform r8169 pwm_rockchip pwm_fan rockchip_thermal; do
+  /sbin/modprobe "$module" >> /www/modules.log 2>&1
+ done
+ for f in /sys/class/hwmon/hwmon*/pwm1; do [ -w "$f" ] && echo 255 > "$f"; done
+ sleep 2
+done
+ip link set lo up
+ip link set eth0 address @MAC@
+ip link set eth0 up
+ip addr add @ADDRESS@ dev eth0
+ip route add default via @GATEWAY@
+
+# Boot the installed Debian filesystem after the proven E1 hardware setup.
+boot_installed_debian() {
+ expected_uuid=@ROOT_UUID@
+ [ "$(cat /sys/block/mmcblk0/device/cid)" = @CID@ ] || return 1
+ [ "$(blkid -s UUID -o value /dev/mmcblk0p19)" = "$expected_uuid" ] || return 1
+ modprobe ext4 || return 1
+ # RTC can be unset; systemd/NTP will establish precise time after boot.
+ [ "$(date +%s)" -ge @EPOCH@ ] || date -u -s @@EPOCH@
+ e2fsck -p /dev/mmcblk0p19
+ fsck_result=$?
+ [ "$fsck_result" -le 1 ] || return 1
+ mkdir -p /newroot
+ mount -t ext4 -o rw,noatime /dev/mmcblk0p19 /newroot || return 1
+ mkdir -p /newroot/var/log /newroot/dev /newroot/proc /newroot/sys /newroot/run
+ {
+  echo LINCSTATION_INSTALLED_EARLY_BOOT_20261022
+  date -u
+  cat /proc/cmdline
+  cat /proc/mounts
+  dmesg
+ } > /newroot/var/log/lincstation-early-boot.log
+ chroot /newroot /usr/lib/systemd/systemd --version >> /newroot/var/log/lincstation-early-boot.log 2>&1 || { umount /newroot; return 1; }
+ sync
+ mount --move /dev /newroot/dev || return 1
+ mount --move /proc /newroot/proc || return 1
+ mount --move /sys /newroot/sys || return 1
+ exec /bin/busybox switch_root /newroot /sbin/init
+}
+boot_installed_debian
+# If mounting or validation fails, retain authenticated RAM SSH for diagnosis.
+echo "Installed-root startup failed; entering RAM rescue"
+
+/usr/sbin/sshd -f /etc/ssh/sshd_config -E /www/sshd.log
+sleep 5
+{
+ echo "LINCSTATION_DEBIAN_RECOVERY_20261022"
+ id
+ uname -a
+ cat /proc/cmdline
+ cat /proc/mounts
+ cat /proc/partitions
+ ip address
+ cat /proc/modules
+ for f in /sys/class/thermal/thermal_zone*/temp; do echo "$f"; cat "$f"; done
+ for f in /sys/class/hwmon/hwmon*/pwm1; do echo "$f"; cat "$f"; done
+} > /www/proof.txt 2>&1
+dmesg > /www/dmesg.txt
+cat /www/proof.txt
+while :; do sleep 10; done

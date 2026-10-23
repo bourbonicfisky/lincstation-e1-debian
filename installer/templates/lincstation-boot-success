@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+"""Mark the tested Debian A slot successful only after root and SSH/network checks."""
+import pathlib,subprocess,json,struct,zlib,socket,os
+plan=json.loads(pathlib.Path('/etc/lincstation-install.json').read_text())
+assert 'androidboot.slot_suffix=_a' in pathlib.Path('/proc/cmdline').read_text()
+rootdev=subprocess.check_output(['findmnt','-n','-o','SOURCE','/'],text=True).strip()
+actual=subprocess.check_output(['blkid','-s','UUID','-o','value',rootdev],text=True).strip()
+assert actual==plan['root_uuid'],'Unexpected root filesystem'
+assert pathlib.Path('/sys/block/mmcblk0/device/cid').read_text().strip()==plan['emmc_cid']
+subprocess.run(['systemctl','is-active','--quiet','ssh'],check=True)
+with socket.create_connection((plan['nas_ip'],22),timeout=5) as conn:
+ assert conn.recv(256).startswith(b'SSH-')
+p='/dev/disk/by-partlabel/misc'
+assert pathlib.Path(p).resolve()==pathlib.Path('/dev/mmcblk0p6')
+with open(p,'r+b',buffering=0) as f:
+ f.seek(2048);old=f.read(512);ab=bytearray(old[:32])
+ assert ab[:4]==b'\0AB0' and ab[4]==1
+ assert zlib.crc32(ab[:28])==struct.unpack('>I',ab[28:32])[0]
+ assert ab[14]==1 and ab[12]>0,'Recovery slot B must remain successful'
+ ab[8:12]=bytes([15,0,1,0]);ab[12]=14
+ ab[28:32]=struct.pack('>I',zlib.crc32(ab[:28]))
+ new=bytes(ab)+old[32:]
+ if new!=old:
+  f.seek(2048);assert f.write(new)==512;os.fsync(f.fileno());f.seek(2048);assert f.read(512)==new
+print('Debian root and SSH verified; slot A marked successful; recovery B preserved.')
