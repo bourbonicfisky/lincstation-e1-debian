@@ -139,4 +139,4 @@ A 20-second 1080p30 H.264 High-profile clip (600 frames), decoded to `fakesink`:
 
 The generalized root-access/backup/flash/finish sequence has not been executed end to end on a second stock E1. The tested images above were not booted on hardware. The manual hardware path and individual desktop/VNC setup were exercised on the original NAS; that does not prove every newly generalized stage or recipient firmware variant.
 
-Do not infer support for other E1 firmware hashes, board revisions, kernel versions, power-off, hardware decoding beyond the tested H.264 path, 4K playback, Wi-Fi association or throughput, Bluetooth pairing, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.
+Do not infer support for other E1 firmware hashes, board revisions, kernel versions, hardware decoding beyond the tested H.264 path, 4K playback, Wi-Fi association or throughput, Bluetooth pairing, NVMe population, or automatic Android restoration. On-device writes intentionally require explicit stages and matching identities, and unknown stock firmware is rejected.
