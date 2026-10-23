@@ -54,6 +54,18 @@ Running the build in emulation turned up four problems that a native Pi build hi
 
 The x86-64 Linux path uses the same emulation, but it hasn't been run end to end. Apple Silicon Macs run the container natively and haven't been tested yet either.
 
+## CPU benchmark (Geekbench 6)
+
+| Single-core | Multi-core | Result |
+| ---: | ---: | --- |
+| **230** | **605** | [browser.geekbench.com/v6/cpu/19377989](https://browser.geekbench.com/v6/cpu/19377989) |
+
+- Geekbench 6.7.1 Preview for Linux AArch64, the official ARM64 build. Run on October 22, 2026, it took 28 minutes 10 seconds.
+- Debian 13 with kernel `6.12.113+deb13-arm64`, 4 cores, and 3.81 GB RAM. The `schedutil` governor was left at its default, with a 1.992 GHz maximum.
+- Peak sampled SoC temperature was 52.5 °C.
+- OMV, the HDMI desktop and VNC were left running. This is one live-system run, not an average of isolated runs.
+- SSH, nginx and the OMV engine were active afterwards, with no failed systemd units.
+
 ## Hardware video decoding
 
 Tested on the migrated E1 (Debian kernel 6.12.113, GStreamer 1.26), after installing `gstreamer1.0-plugins-bad`, `gstreamer1.0-plugins-good`, `gstreamer1.0-libav`, `gstreamer1.0-tools` and `v4l-utils`. The APT dry run removed nothing.
