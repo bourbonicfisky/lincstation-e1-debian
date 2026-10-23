@@ -66,6 +66,19 @@ The x86-64 Linux path uses the same emulation, but it hasn't been run end to end
 - OMV, the HDMI desktop and VNC were left running. This is one live-system run, not an average of isolated runs.
 - SSH, nginx and the OMV engine were active afterwards, with no failed systemd units.
 
+## Fan curve
+
+The upstream device tree's fan trips are at 25, 35 and 45 °C. On the migrated E1 the CPU idled at 36–37 °C, so the fan ran at pwm 170/255, about 2,230 RPM. Moving the trips to 25, 50 and 60 °C at runtime gave these results:
+
+| Time | CPU | Fan | Drives (sda/sdb) |
+| --- | --- | --- | --- |
+| Before | 37 °C | pwm 170, 2,226 RPM | 33/33 °C |
+| +1 min | 34 °C | pwm 50, 1,259 RPM | 33/33 °C |
+| +2 min | 34 °C | pwm 90, 1,348 RPM | 33/34 °C |
+| +3 min | 35 °C | pwm 90, 1,378 RPM | 34/34 °C |
+
+The drives are WD Red Plus 4 TB (WD40EFPX, 5,400 RPM). The `lincstation-fan` service replaced deliberately restored upstream trips with the configured ones. An invalid config (medium at 80 °C) was rejected, and the trips were left unchanged. These were short idle measurements. Drive temperatures under sustained load with the quieter curve haven't been measured yet.
+
 ## Wi-Fi and Bluetooth
 
 The E1 uses a Realtek **RTL8822CS** module: Wi-Fi over SDIO (`mmc1`, ID `024c:c822`) and Bluetooth over `uart1` with the H5 protocol. The stock Android device tree identifies it as `rtl8822cs`.

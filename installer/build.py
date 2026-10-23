@@ -56,7 +56,10 @@ def build(work):
     put('etc/network/interfaces','auto lo\niface lo inet loopback\n\nauto eth0\niface eth0 inet static\n    address '+plan['nas_ip']+'/'+str(plan['prefix'])+'\n    gateway '+plan['gateway']+'\n    dns-nameservers '+plan['dns']+'\n')
     put('usr/local/sbin/lincstation-boot-success',(BASE/'templates/lincstation-boot-success').read_text(),0o755)
     put('etc/systemd/system/lincstation-boot-success.service',(BASE/'templates/lincstation-boot-success.service').read_text())
-    chroot('systemctl','enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success')
+    put('usr/local/sbin/lincstation-fan',(BASE/'templates/lincstation-fan').read_text(),0o755)
+    put('etc/systemd/system/lincstation-fan.service',(BASE/'templates/lincstation-fan.service').read_text())
+    put('etc/default/lincstation-fan',(BASE/'templates/lincstation-fan.default').read_text())
+    chroot('systemctl','enable','ssh','systemd-networkd','systemd-resolved','systemd-timesyncd','lincstation-boot-success','lincstation-fan')
     (root/'run/sshd').mkdir(exist_ok=True);chroot('/usr/sbin/sshd','-t')
     for directory in ['bin','sbin','usr/bin','usr/sbin','proc','sys','dev/pts','run/sshd','tmp','www','etc/ssh','root/.ssh','lib/modules','lib/firmware','mnt']:(ram/directory).mkdir(parents=True,exist_ok=True)
     for d in ram.rglob('*'):

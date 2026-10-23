@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply the LincStation E1 fan curve
+ConditionPathExists=/sys/class/thermal
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/lincstation-fan
+
+[Install]
+WantedBy=multi-user.target

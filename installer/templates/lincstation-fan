@@ -1,0 +1,30 @@
+#!/bin/sh
+# Apply the fan curve from /etc/default/lincstation-fan to the CPU thermal zone's active trip points.
+# The device tree gives the fan three steps: quiet (pwm 20-90), medium (130-170) and full (210-255).
+set -eu
+CONFIG=/etc/default/lincstation-fan
+FAN_QUIET=25; FAN_MEDIUM=50; FAN_FULL=60
+[ -r "$CONFIG" ] && . "$CONFIG"
+for v in "$FAN_QUIET" "$FAN_MEDIUM" "$FAN_FULL"; do
+    case "$v" in ''|*[!0-9]*) echo "lincstation-fan: temperatures must be whole degrees Celsius" >&2; exit 1;; esac
+done
+if [ "$FAN_QUIET" -ge "$FAN_MEDIUM" ] || [ "$FAN_MEDIUM" -ge "$FAN_FULL" ] || [ "$FAN_FULL" -ge 70 ]; then
+    echo "lincstation-fan: need FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70 (the CPU starts throttling at 70 C)" >&2; exit 1
+fi
+zone=
+for z in /sys/class/thermal/thermal_zone*; do
+    [ "$(cat "$z/type")" = cpu-thermal ] && zone=$z
+done
+[ -n "$zone" ] || { echo "lincstation-fan: cpu-thermal zone not found" >&2; exit 1; }
+# The three active (fan) trips, in the device tree's ascending temperature order.
+trips=$(for t in "$zone"/trip_point_*_type; do
+    [ "$(cat "$t")" = active ] || continue
+    i=${t##*trip_point_}; i=${i%_type}; echo "$(cat "$zone/trip_point_${i}_temp") $i"
+done | sort -n | awk '{print $2}')
+[ "$(echo "$trips" | wc -w)" -eq 3 ] || { echo "lincstation-fan: expected 3 active fan trips" >&2; exit 1; }
+set -- $trips
+# Raise the top trip first so the trips stay in ascending order while they change.
+echo $((FAN_FULL * 1000)) > "$zone/trip_point_$3_temp"
+echo $((FAN_MEDIUM * 1000)) > "$zone/trip_point_$2_temp"
+echo $((FAN_QUIET * 1000)) > "$zone/trip_point_$1_temp"
+echo "lincstation-fan: quiet above ${FAN_QUIET} C, medium above ${FAN_MEDIUM} C, full above ${FAN_FULL} C"

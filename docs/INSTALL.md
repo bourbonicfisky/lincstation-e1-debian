@@ -180,6 +180,28 @@ sudo python3 setup-vnc.py USER
 
 `setup-vnc.py` prompts for an eight-character VNC password; it does not place it in command arguments. The `--live` option can start it in an existing single Openbox/LXDE session. `install-desktop.sh USER --live` updates the panel/desktop while preserving open apps; the full LXDE session starts on the next `startx`.
 
+## Fan curve
+
+The kernel controls the fan from the CPU temperature, in three steps set by the device tree:
+
+| Step | Fan level (of 255) | Default: CPU above |
+| --- | --- | --- |
+| Quiet | 20–90 (about 1,250–1,400 RPM) | 25 °C |
+| Medium | 130–170 (about 2,250 RPM at 170) | 50 °C |
+| Full | 210–255 | 60 °C |
+
+The upstream device tree switches to the medium step at 35 °C and full at 45 °C. An idle E1 sits around 35–37 °C, so the fan whirred at medium all the time. The `lincstation-fan` service applies the quieter defaults above at every boot. The CPU still throttles at 70 °C and shuts down at 95 °C regardless of the fan curve.
+
+To change the curve, edit `/etc/default/lincstation-fan` on the NAS:
+
+```sh
+sudo nano /etc/default/lincstation-fan          # FAN_QUIET, FAN_MEDIUM, FAN_FULL in °C
+sudo systemctl restart lincstation-fan          # apply now; it also applies at every boot
+cat /sys/class/hwmon/hwmon*/fan1_input          # fan speed in RPM
+```
+
+The temperatures must be whole degrees with `FAN_QUIET < FAN_MEDIUM < FAN_FULL < 70`. Invalid values are rejected, and the current curve stays in place. Below `FAN_QUIET` the fan stops completely. Keep `FAN_QUIET` below the idle temperature so the hard drives always get airflow. The curve only watches the CPU, so after changes check the drives with `sudo smartctl -A /dev/sda | grep Temperature`; under about 45 °C is comfortable for these drives. To go back to the upstream curve, set 25, 35 and 45.
+
 ## Kernel maintenance and recovery
 
 This E1's stock bootloader reads Android-v2 boot partitions, not `/boot`. A normal Debian kernel install alone does not update that boot image.
